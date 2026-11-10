@@ -9,16 +9,22 @@ from views import components
 
 st.title("Trips")
 
+_companies = api.safe(api.get, "/companies") or []
+_cmap = {c["id"]: c for c in _companies}
+company_id = st.selectbox("Company", [None] + list(_cmap),
+                          format_func=lambda x: "All companies" if x is None else _cmap[x]["name"])
+
 tab_active, tab_done, tab_cancel, tab_new = st.tabs(["Active", "Completed", "Cancelled", "➕ Create trip"])
 
 
 def trip_table(group: str, key: str) -> str | None:
-    trips = api.safe(api.get, "/trips", group=group) or []
+    trips = api.safe(api.get, "/trips", group=group, company_id=company_id) or []
     if not trips:
         st.info("No trips.")
         return None
     df = pd.DataFrame([{
-        "Trip": t["id"], "Status": fmt.status(t["status"]), "Shipment": t["shipment"]["id"],
+        "Trip": t["id"], "Status": fmt.status(t["status"]),
+        "Company": t["company"]["code"] if t.get("company") else "–", "Shipment": t["shipment"]["id"],
         "Customer": t["shipment"]["customer_name"], "Driver": t["driver"]["name"] if t["driver"] else "–",
         "Vehicle": t["vehicle"]["reg_no"] if t["vehicle"] else "–",
         "From": t["shipment"]["pickup"]["address"], "To": t["shipment"]["drop"]["address"],
@@ -58,7 +64,10 @@ def trip_detail(trip_id: str) -> None:
         st.markdown(f"**Customer** {s['customer_name']} · {s['customer_phone'] or '–'} · {s['customer_email'] or '–'}")
         st.markdown(f"**Pickup** {s['pickup']['address']}")
         st.markdown(f"**Destination** {s['drop']['address']}")
+        st.markdown(f"**Company** {t['company']['name'] if t.get('company') else '–'}")
         st.markdown(f"**Driver** {t['driver']['name'] + ' · ' + t['driver']['phone'] if t['driver'] else '–'}")
+        if t["last_location"]:
+            st.markdown(f"**Tracking** {fmt.source(t['last_location'].get('source'), t['last_location'].get('acc'))}")
         st.markdown(f"**Vehicle** {t['vehicle']['reg_no'] if t['vehicle'] else '–'}")
         st.markdown(f"**Expected by** {fmt.local(t['expected_delivery_at'])}")
         st.markdown(f"**Delivery OTP** `{s['delivery_otp']}` {'(required)' if s['require_otp'] else '(optional)'}")
@@ -103,10 +112,12 @@ def actions(t: dict) -> None:
     st.markdown("#### Actions")
 
     if status in ("CREATED", "ASSIGNED"):
-        drivers = [d for d in (api.safe(api.get, "/drivers") or []) if d["active"]]
+        drivers = [d for d in (api.safe(api.get, "/drivers", company_id=company_id) or []) if d["active"]]
         if drivers:
             with st.form(f"assign_{tid}"):
-                label = {d["id"]: f"{d['name']} ({d['vehicle']['reg_no'] if d['vehicle'] else 'no vehicle'})"
+                label = {d["id"]: f"{d['name']} · {d['company']['code'] if d['company'] else '–'} "
+                                  f"({d['vehicle']['reg_no'] if d['vehicle'] else 'no vehicle'}) · "
+                                  f"{fmt.sim_status(d['sim']['status'] if d['sim'] else None)}"
                          for d in drivers}
                 did = st.selectbox("Driver", list(label), format_func=label.get)
                 vehicles = [v for v in (api.safe(api.get, "/vehicles") or []) if v["active"]]
@@ -157,13 +168,16 @@ def create_trip() -> None:
     if not shipments:
         st.info("No unassigned shipments. Create one on the Shipments page first.")
         return
-    drivers = [d for d in (api.safe(api.get, "/drivers") or []) if d["active"]]
+    drivers = [d for d in (api.safe(api.get, "/drivers", company_id=company_id) or []) if d["active"]]
     with st.form("new_trip"):
         slabel = {s["id"]: f"{s['id']} · {s['customer_name']} · {s['pickup']['address']} → {s['drop']['address']}"
                   for s in shipments}
         sid = st.selectbox("Shipment", list(slabel), format_func=slabel.get)
-        dlabel = {None: "Assign later"} | {d["id"]: f"{d['name']} ({d['vehicle']['reg_no'] if d['vehicle'] else 'no vehicle'})"
-                                           for d in drivers}
+        dlabel = {None: "Assign later"} | {
+            d["id"]: f"{d['name']} · {d['company']['code'] if d['company'] else '–'} "
+                     f"({d['vehicle']['reg_no'] if d['vehicle'] else 'no vehicle'}) · "
+                     f"{fmt.sim_status(d['sim']['status'] if d['sim'] else None)}"
+            for d in drivers}
         did = st.selectbox("Driver", list(dlabel), format_func=dlabel.get)
         c1, c2 = st.columns(2)
         set_eta = c1.checkbox("Set expected delivery time", value=True)

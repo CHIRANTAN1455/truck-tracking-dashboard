@@ -47,9 +47,16 @@ def render(token: str) -> None:
         maps.place_marker(m, drop["lat"], drop["lon"], "drop", drop["address"])
         if data["location"]:
             loc = data["location"]
-            maps.truck_marker(m, loc["lat"], loc["lon"], maps.FRESHNESS_COLOR[maps.freshness(loc["age_sec"])],
+            sim = loc.get("source") == "sim"
+            if sim:
+                maps.accuracy_circle(m, loc["lat"], loc["lon"], loc.get("accuracy_m"))
+            maps.truck_marker(m, loc["lat"], loc["lon"],
+                              maps.FRESHNESS_COLOR[maps.freshness(loc["age_sec"], 600 if sim else None)],
                               "Your shipment", {"Updated": fmt.local(loc["ts"])})
         st_folium(m, height=420, use_container_width=True, returned_objects=[], key="public_map")
+        if data["location"] and data["location"].get("source") == "sim":
+            st.caption(f"Approximate location from the mobile network (within "
+                       f"{fmt.distance(data['location'].get('accuracy_m'))}). Updated every few minutes.")
         if not data["live_tracking"]:
             st.caption("Live location is shown only while the shipment is on the way."
                        if data["status"] != "DELIVERED" else "Live tracking has ended because the shipment was delivered.")

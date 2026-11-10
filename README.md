@@ -3,6 +3,10 @@
 Streamlit operations dashboard and public customer tracking page for
 [truck-tracking-backend](../truck-tracking-backend).
 
+Trucks are located through the driver's SIM (consent-based network location, see the backend README).
+SIM fixes are approximate, so maps draw them as a circle around the truck, and freshness is judged against
+each truck's ping interval (10 min on a trip) instead of a fixed 1 / 5 minutes.
+
 The live map is a port of [nammayatri/tracking-dashboard](https://github.com/nammayatri/tracking-dashboard)
 (React/Leaflet): freshness-coloured markers (green < 1 min, orange 1–5 min, red > 5 min), summary
 cards, hover tooltips / click popups, 10 s auto-refresh, and trail playback for location history.
@@ -27,11 +31,12 @@ Set the backend's `PUBLIC_TRACKING_BASE_URL` to this dashboard's public URL so s
 
 | Page | What it does |
 |---|---|
-| Live map | All trucks, colour by last-update age, popups with driver / trip / speed / last update |
+| Live map | All trucks, filter by company (one map layer per company), SIM accuracy circles, colour by "on schedule" vs each truck's ping interval, per-company summary |
 | Trips | Active / completed / cancelled tabs, create trip, assign driver + vehicle, status actions, cancel, POD (photo, receiver, OTP), timeline, trip map (planned route + travelled path), tracking link share/revoke |
 | Shipments | Create shipments (pickup & destination), details, tracking links |
 | Alerts | Route deviation, delivery delay, location stopped; resolve; run checks now |
-| Drivers & vehicles | Driver profiles, vehicle assignment, activate/deactivate |
+| Companies & drivers | Trucking companies (counts, SIM coverage), drivers with company + SIM status, vehicles per company |
+| SIM tracking | Consent status per driver (tracking / awaiting / withdrawn / expired / failed), locate now, re-send or stop consent, bulk consent per company, consent audit trail, integration health |
 | Location history | Per trip or per driver + date range, playback slider, CSV export |
 | Trip reports | Distance, duration, on-time %, by status, CSV export |
 | Notifications | Customer and ops message log |

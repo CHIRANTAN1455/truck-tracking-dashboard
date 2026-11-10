@@ -4,7 +4,10 @@ from lib import api, fmt
 
 st.title("Alerts")
 
-c1, c2 = st.columns([3, 1])
+companies = api.safe(api.get, "/companies") or []
+cmap = {c["id"]: c for c in companies}
+c0, c1, c2 = st.columns([2, 2, 1])
+cid = c0.selectbox("Company", [None] + list(cmap), format_func=lambda x: "All companies" if x is None else cmap[x]["name"])
 show_all = c1.toggle("Include resolved alerts", value=False)
 if c2.button("Run checks now", use_container_width=True,
              help="Delay and stale-location checks normally run every minute on the backend"):
@@ -15,7 +18,7 @@ if c2.button("Run checks now", use_container_width=True,
 
 @st.fragment(run_every=30)
 def alert_list() -> None:
-    alerts = api.safe(api.get, "/alerts", open_only=not show_all) or []
+    alerts = api.safe(api.get, "/alerts", open_only=not show_all, company_id=cid) or []
     if not alerts:
         st.success("No alerts. All trucks are reporting and on schedule.")
         return

@@ -42,7 +42,8 @@ pages = {
         st.Page("views/alerts.py", title="Alerts", icon="🚨"),
     ],
     "Fleet": [
-        st.Page("views/fleet.py", title="Drivers & vehicles", icon="👷"),
+        st.Page("views/fleet.py", title="Companies & drivers", icon="👷"),
+        st.Page("views/sim.py", title="SIM tracking", icon="📶"),
         st.Page("views/history.py", title="Location history", icon="🕒"),
     ],
     "Reports": [

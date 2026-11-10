@@ -11,6 +11,26 @@ STATUS_LABELS = {
 }
 ALERT_LABELS = {"ROUTE_DEVIATION": "Route deviation", "DELAY": "Delivery delay",
                 "LOCATION_STALE": "Location updates stopped"}
+SIM_LABELS = {"ACTIVE": "🟢 Tracking", "PENDING": "🟡 Awaiting consent", "REVOKED": "⛔ Consent withdrawn",
+              "EXPIRED": "⌛ Consent expired", "FAILED": "❌ Registration failed"}
+
+
+def sim_status(code: str | None) -> str:
+    return SIM_LABELS.get(code or "", "— Not registered")
+
+
+def source(code: str | None, acc: float | None = None) -> str:
+    if code == "sim":
+        return f"SIM network (±{acc / 1000:.1f} km)" if acc else "SIM network"
+    if code == "app":
+        return f"Phone GPS (±{acc:.0f} m)" if acc else "Phone GPS"
+    return "–"
+
+
+def distance(m: float | None) -> str:
+    if m is None:
+        return "?"
+    return f"{m / 1000:.1f} km" if m >= 1000 else f"{m:.0f} m"
 
 
 def parse(ts: str | None) -> datetime | None:

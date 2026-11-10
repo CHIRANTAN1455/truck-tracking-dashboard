@@ -7,17 +7,20 @@ from lib import api, fmt
 
 st.title("Trip reports")
 
-drivers = api.safe(api.get, "/drivers") or []
+companies = api.safe(api.get, "/companies") or []
+cmap = {c["id"]: c for c in companies}
 today = datetime.now(fmt.DISPLAY_TZ).date()
-c1, c2, c3 = st.columns(3)
+c1, c2, c3, c4 = st.columns(4)
 start = c1.date_input("From", today - timedelta(days=30))
 end = c2.date_input("To", today)
+cid = c3.selectbox("Company", [None] + list(cmap), format_func=lambda x: "All companies" if x is None else cmap[x]["name"])
+drivers = api.safe(api.get, "/drivers", company_id=cid) or []
 dlabel = {None: "All drivers"} | {d["id"]: d["name"] for d in drivers}
-did = c3.selectbox("Driver", list(dlabel), format_func=dlabel.get)
+did = c4.selectbox("Driver", list(dlabel), format_func=dlabel.get)
 
 rep = api.safe(api.get, "/reports/trips",
                start=datetime.combine(start, time.min, tzinfo=fmt.DISPLAY_TZ).isoformat(),
-               end=datetime.combine(end, time.max, tzinfo=fmt.DISPLAY_TZ).isoformat(), driver_id=did)
+               end=datetime.combine(end, time.max, tzinfo=fmt.DISPLAY_TZ).isoformat(), driver_id=did, company_id=cid)
 if rep is None:
     st.stop()
 
@@ -40,7 +43,7 @@ if not rep["trips"]:
 
 df = pd.DataFrame([{
     "Trip": r["trip_id"], "Shipment": r["shipment_id"], "Status": fmt.status(r["status"]),
-    "Driver": r["driver"] or "–", "Vehicle": r["vehicle"] or "–", "Started": fmt.local(r["started_at"]),
+    "Company": r.get("company") or "–", "Driver": r["driver"] or "–", "Vehicle": r["vehicle"] or "–", "Started": fmt.local(r["started_at"]),
     "Ended": fmt.local(r["ended_at"]), "Distance (km)": r["distance_km"], "Planned (km)": r["planned_distance_km"],
     "Duration (min)": r["duration_min"],
     "On time": {True: "Yes", False: "No", None: "–"}[r["on_time"]],

@@ -31,7 +31,8 @@ else:
         st.stop()
     dmap = {d["id"]: d for d in drivers}
     c1, c2, c3 = st.columns([2, 1, 1])
-    did = c1.selectbox("Driver", list(dmap), format_func=lambda x: dmap[x]["name"])
+    did = c1.selectbox("Driver", list(dmap), format_func=lambda x: f"{dmap[x]['name']} · "
+                       f"{dmap[x]['company']['code'] if dmap[x]['company'] else '–'} · {dmap[x]['phone']}")
     today = datetime.now(fmt.DISPLAY_TZ).date()
     start = c2.date_input("From", today - timedelta(days=1))
     end = c3.date_input("To", today)
@@ -50,7 +51,7 @@ c = st.columns(4)
 c[0].metric("Point", f"{upto} / {len(points)}")
 c[1].metric("Time", fmt.local(cur["ts"]))
 c[2].metric("Speed", f"{cur['speed_kmph'] or 0} km/h")
-c[3].metric("Accuracy", f"±{cur['acc'] or '?'} m")
+c[3].metric("Source", fmt.source(cur.get("source"), cur.get("acc")))
 
 if trip:
     m = maps.trip_map(trip, points, upto=upto)
@@ -58,11 +59,14 @@ else:
     shown = points[:upto]
     m = maps.base_map([(p["lat"], p["lon"]) for p in shown])
     maps.route_line(m, [(p["lat"], p["lon"]) for p in shown])
+    if cur.get("source") == "sim":
+        maps.accuracy_circle(m, cur["lat"], cur["lon"], cur["acc"])
     maps.truck_marker(m, cur["lat"], cur["lon"], "blue", fmt.local(cur["ts"]), {"Time": fmt.local(cur["ts"])})
 st_folium(m, height=500, use_container_width=True, returned_objects=[], key="history_map")
 
 df = pd.DataFrame([{"Time": fmt.local(p["ts"]), "Lat": p["lat"], "Lon": p["lon"], "Speed (km/h)": p["speed_kmph"],
-                    "Accuracy (m)": p["acc"], "Used for distance": p["accurate"], "Trip": p["trip_id"] or ""}
+                    "Accuracy (m)": p["acc"], "Source": p.get("source") or "", "Used for distance": p["accurate"],
+                    "Trip": p["trip_id"] or ""}
                    for p in points])
 st.dataframe(df, hide_index=True, use_container_width=True, height=260)
 st.download_button("Download CSV", df.to_csv(index=False), file_name="location_history.csv", mime="text/csv")
