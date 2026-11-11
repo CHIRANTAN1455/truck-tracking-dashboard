@@ -53,7 +53,7 @@ pages = {
 }
 nav = st.navigation(pages)
 with st.sidebar:
-    st.caption(f"Backend: {api.BACKEND_URL}")
+    # st.caption(f"Backend: {api.BACKEND_URL}")
     if st.button("Log out"):
         api.logout()
         st.rerun()
