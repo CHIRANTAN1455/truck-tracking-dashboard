@@ -27,6 +27,12 @@ Open http://localhost:8501 and log in with the backend's `ADMIN_USERNAME` / `ADM
 
 Set the backend's `PUBLIC_TRACKING_BASE_URL` to this dashboard's public URL so shared links point here.
 
+## Deploy for free (Streamlit Community Cloud)
+
+Create an app from this repo (main file `app.py`, Python 3.12) and add the secret
+`BACKEND_URL = "https://<your-backend>.onrender.com"`. Settings are read from environment variables first,
+then from Streamlit secrets. Full steps are in the backend README under "Deploy for free".
+
 ## Pages
 
 | Page | What it does |

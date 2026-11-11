@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-DISPLAY_TZ = ZoneInfo(os.environ.get("DISPLAY_TZ", "Asia/Kolkata"))
+DISPLAY_TZ = ZoneInfo(os.environ.get("DISPLAY_TZ") or "Asia/Kolkata")
 
 STATUS_LABELS = {
     "CREATED": "Created", "ASSIGNED": "Assigned", "PICKED_UP": "Picked up", "STARTED": "Trip started",

@@ -5,8 +5,20 @@ import os
 import requests
 import streamlit as st
 
-BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000").rstrip("/")
-TIMEOUT = 15
+
+
+def _setting(name: str, default: str) -> str:
+    """Environment variable, else Streamlit secret (Streamlit Community Cloud), else default."""
+    if os.environ.get(name):
+        return os.environ[name]
+    try:
+        return str(st.secrets[name])
+    except Exception:  # no secrets.toml, or key missing
+        return default
+
+
+BACKEND_URL = _setting("BACKEND_URL", "http://localhost:8000").rstrip("/")
+TIMEOUT = 60  # a free backend that was asleep needs up to ~50 s to wake up
 
 
 class ApiError(Exception):
